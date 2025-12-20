@@ -124,4 +124,83 @@ PathOver B p x' y' = subst B p x' ≡ y'
 ×≡ refl refl = refl
 
 Σ≡ : {A : Type ℓ} {B : A → Type ℓ'} {x x' : A} (p : x ≡ x') {y : B x} {y' : B x'} → PathOver B p y y' → (x , y) ≡ (x' , y')
-Σ≡ p q = {!!}
+Σ≡ {x = x} refl q = cong (λ y → x , y) q
+
+congP : {A : Type ℓ} (B : A → Type ℓ') (f : (x : A) → B x) { x y : A} (p : x ≡ y) → PathOver B p (f x) (f y)
+congP _ _ refl = refl
+
+funTypeTranspR : {A : Type ℓ} {B B' : Type ℓ'} (p : B ≡ B') (f : A → B) → subst (λ X → A → X) p f ≡ transport p ∘ f
+funTypeTranspR refl _ = refl
+
+funTypeTranspL : {A A' : Type ℓ} {B : Type ℓ'} (p : A ≡ A') (f : A → B) → subst (λ X → X → B) p f ≡ f ∘ transport (sym p)
+funTypeTranspL refl _ = refl
+
+funTypeTransp : {A : Type ℓ} (B : A → Type ℓ') (C : A → Type ℓ'') {x y : A} (p : x ≡ y) (f : B x → C x) → PathOver (λ x → B x → C x) p f (subst C p ∘ f ∘ subst B (sym p))
+funTypeTransp _ _ refl _ = refl
+
+--- Part 6
+
+UIP : Type₁
+UIP = {A : Type} {x y : A} (p q : x ≡ y) → p ≡ q
+
+URP : Type₁
+URP = {A : Set} {x : A} (p : x ≡ x) → p ≡ refl
+
+K : Type₁
+K = {A : Type} {x : A} (P : (x ≡ x) → Set) → P refl → (p : x ≡ x) → P p
+
+UIP→URP : UIP → URP
+UIP→URP = λ uip p → uip p refl
+
+URP→UIP : URP → UIP
+URP→UIP = λ urp → λ {refl q → sym (urp q)}
+
+URP→K : URP → K
+URP→K = λ urp P Pr p → subst P (sym (urp p)) Pr
+
+K→URP : K → URP
+K→URP = λ k p → k (λ x → x ≡ refl) refl p
+
+
+--- Part 7
+
+_==_ : {ℓ : Level} {A : Type ℓ} → A → A → Type _
+_==_ {ℓ} {A} x y = (P : A → Type ℓ) → P x → P y
+
+
+Lrefl : {A : Type ℓ} {x : A} → x == x
+Lrefl _ px = px
+
+
+Lsym : {A : Type ℓ} {x y : A} → x == y → y == x
+Lsym {x = x} lxy P = lxy (λ z → P z → P x) (Lrefl P)
+
+
+Ltrans : {A : Type ℓ} {x y z : A} → x == y → y == z → x == z
+Ltrans {z = z} lxy lyz P px = lyz P (lxy P px)
+
+Lto≡ : {A : Type ℓ} {x y : A} → x == y → x ≡ y
+Lto≡ {x = x} lxy = lxy (λ z → x ≡ z) refl
+
+≡toL : {A : Type ℓ} {x y : A} → x ≡ y → x == y
+≡toL refl = Lrefl
+
+≡to≡ : {A : Type ℓ} {x y : A} (p : x ≡ y) → Lto≡ (≡toL p) ≡ p
+≡to≡ refl = refl
+
+J' : {A : Type ℓ} (P : (x y : A) → x ≡ y → Type ℓ') → ((x : A) → P x x refl) → {x y : A} (p : x ≡ y) → P x y p
+J' P f {x = x} p = J (P x) (f x) p
+
+J'' : {A : Type ℓ} {x : A} (P : (y : A) → x ≡ y → Type ℓ') → P x refl → {y : A} (p : x ≡ y) → P y p
+J'' {A = A} P Pxr p = f p P Pxr
+  where
+  D : (x y : A) → (x ≡ y) → Type _
+  D x y p =  (C : (z : A) → (x ≡ z) → Type _) → C x refl → C y p 
+  d : (x : A) → D x x refl
+  d x C c = c
+  f : {x y : A} → (p : x ≡ y) → D x y p
+  f = J' D d
+
+
+EH : {A : Type ℓ} {x : A} (α β : refl {x = x} ≡ refl) → α ∙ β ≡ β ∙ α
+EH = {!!}
