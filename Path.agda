@@ -188,6 +188,8 @@ Lto≡ {x = x} lxy = lxy (λ z → x ≡ z) refl
 ≡to≡ : {A : Type ℓ} {x y : A} (p : x ≡ y) → Lto≡ (≡toL p) ≡ p
 ≡to≡ refl = refl
 
+--- Part 8
+
 J' : {A : Type ℓ} (P : (x y : A) → x ≡ y → Type ℓ') → ((x : A) → P x x refl) → {x y : A} (p : x ≡ y) → P x y p
 J' P f {x = x} p = J (P x) (f x) p
 
@@ -201,6 +203,54 @@ J'' {A = A} P Pxr p = f p P Pxr
   f : {x y : A} → (p : x ≡ y) → D x y p
   f = J' D d
 
+--- Part 9
+
+_■ᵣ_ : {A : Type ℓ} {a b c : A} {p q : a ≡ b} (α : p ≡ q) (r : b ≡ c) → p ∙ r ≡ q ∙ r
+_■ᵣ_ {p = p} {q = q} α refl = sym (rUnit p) ∙ α ∙ rUnit q
+
+
+lemma1 : {A : Type ℓ} {x : A } (α : refl { x = x } ≡ refl) →  α ■ᵣ refl ≡ sym (rUnit refl) ∙ α ∙ rUnit refl
+lemma1 _ = refl
+
+_■ₗ_ : {A : Type ℓ} {a b c : A} {r s : b ≡ c} (q : a ≡ b ) (β : r ≡ s) → q ∙ r ≡ q ∙ s
+_■ₗ_ {r = r} {s = s} refl β = sym (lUnit r) ∙ β ∙ lUnit s
+
+lemma2 : {A : Type ℓ} {x : A} (β : refl { x = x } ≡ refl) → refl ■ₗ β ≡ sym (lUnit refl) ∙ β ∙ lUnit refl
+lemma2 _ = refl
+
+_⋆_ : {A : Type ℓ} {a b c : A} {p q : a ≡ b} {r s : b ≡ c} (α : p ≡ q) (β : r ≡ s) → p ∙ r ≡ q ∙ s
+_⋆_ {q = q} {r = r} α β = (α ■ᵣ r) ∙ (q ■ₗ β)
+
+_⋆'_ : {A : Type ℓ} {a b c : A} {p q : a ≡ b} {r s : b ≡ c} (α : p ≡ q) (β : r ≡ s) → p ∙ r ≡ q ∙ s
+_⋆'_ {p = p} {s = s} α β = (p ■ₗ β) ∙ (α ■ᵣ s)
+
+starToTrans : { A : Type ℓ} {x : A} (α β : refl {x = x} ≡ refl) → (α ⋆ β) ≡ (α ∙ β)
+starToTrans {A = A} {x = x} α β =
+  (α ⋆ β) ≡⟨ refl ⟩
+  (α ■ᵣ refl ) ∙ (refl ■ₗ β) ≡⟨ cong (λ z →  z ∙ (refl ■ₗ β)) (lemma1 α) ⟩
+  (sym (rUnit refl) ∙ α ∙ rUnit refl) ∙ (refl ■ₗ β) ≡⟨ assoc (sym (rUnit refl) ∙ α) (rUnit refl) (refl ■ₗ β ) ⟩
+  sym (rUnit refl) ∙ α ∙ rUnit refl ∙ (refl ■ₗ β) ≡⟨ cong (λ z → sym (rUnit refl) ∙ α ∙ rUnit refl ∙ z)  refl ⟩
+  sym (rUnit refl) ∙ α ∙ rUnit refl ∙ sym (lUnit refl) ∙ β ∙ lUnit refl ≡⟨ refl ⟩
+  α ∙ β ∙ refl ≡⟨ cong (λ z →  α ∙ z ) (sym (rUnit β)) ⟩
+  α ∙ β ∎
+
+starToStar' : { A : Type ℓ } {a b c : A} (p : a ≡ b) {q : a ≡ b} (r : b ≡ c) {s : b ≡ c} (α : p ≡ q) (β : r ≡ s) → α ⋆ β ≡ α ⋆' β
+starToStar' refl refl refl refl = refl
+
+star'ToTrans : {A : Type ℓ} {x : A} (α β : refl {x = x} ≡ refl) → (α ⋆' β) ≡ (β ∙ α)
+star'ToTrans {A = A} {x = x} α β =
+  α ⋆' β ≡⟨ refl ⟩
+  (refl ■ₗ β) ∙ (α ∙ refl) ≡⟨ cong (λ z → ((refl ■ₗ β) ∙ z)) (lemma1 α) ⟩
+  (refl ■ₗ β) ∙ sym (rUnit refl) ∙ α ∙ rUnit refl ≡⟨ cong (λ z → z ∙ sym (rUnit refl) ∙ α ∙ rUnit refl) (lemma2 β) ⟩
+  (sym (lUnit refl) ∙ β ∙ lUnit refl) ∙ sym (rUnit refl) ∙ α ∙ rUnit refl ≡⟨ assoc (sym (lUnit refl) ∙ β) (lUnit refl) (sym (rUnit refl) ∙ α ∙ rUnit refl) ⟩
+  β ∙ α ∙ refl ≡⟨ cong (λ z → β ∙ z) ( sym (rUnit α)) ⟩
+  β ∙ α ∎
 
 EH : {A : Type ℓ} {x : A} (α β : refl {x = x} ≡ refl) → α ∙ β ≡ β ∙ α
-EH = {!!}
+EH α β =
+  α ∙ β ≡⟨ sym (starToTrans α β) ⟩
+  α ⋆ β ≡⟨ starToStar' refl refl α β ⟩
+  α ⋆' β ≡⟨ star'ToTrans α β ⟩
+  β ∙ α ∎
+  
+  
