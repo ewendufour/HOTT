@@ -67,4 +67,49 @@ isProp→isProp' : {A : Type ℓ} → isProp A → isProp' A
 isProp→isProp' P x y = isContr→isContrPath (isProp→isContr P x) x y
 
 isPropIsContr : {A : Type ℓ} → isProp (isContr A)
-isPropIsContr {A = A }(x , px) (y , py) = Σ≡ (px y) (funExt λ z → {!!} )
+isPropIsContr {A = A }(x , px) (y , py) = Σ≡ (px y) (funExt λ z → {!!})
+
+isPropIsProp : {A : Type ℓ} → isProp (isProp A)
+isPropIsProp P Q = funExt λ x → funExt λ y → isContr→isProp (isContr→isContrPath (isProp→isContr P x) x y) (P x y) (Q x y)
+
+isProp× : {A : Type ℓ} {B : Type ℓ'} → isProp A → isProp B → isProp (A × B)
+isProp× P Q (a , b) (a' , b') = ×≡ (P a a') (Q b b')
+
+isProp⊎ : {A : Type ℓ} {B : Type ℓ'} → isProp A → isProp B → (A → B → ⊥) → isProp (A ⊎ B)
+isProp⊎ P Q f (inl a) (inl b) = cong (λ z → inl z) (P a b)
+isProp⊎ P Q f (inl a) (inr b) = ⊥-rec (f a b)
+isProp⊎ P Q f (inr a) (inl b) = ⊥-rec (f b a)
+isProp⊎ P Q f (inr a) (inr b) = cong (λ z → inr z) (Q a b)
+
+isProp→ : {A : Type ℓ} {B : Type ℓ'} → isProp B → isProp (A → B)
+isProp→ P f g = funExt (λ z → P (f z) (g z))
+
+isPropΠ : {A : Type ℓ} (B : A → Type ℓ') → ((x : A) → isProp (B x)) → isProp ((x : A) → B x)
+isPropΠ B P f g = funExt (λ z → P z (f z) (g z))
+
+isProp¬ : {A : Type ℓ} → isProp (¬ A)
+isProp¬ f g = funExt (λ z → isProp⊥ (f z) (g z))
+
+isPropΣ : {A : Type ℓ} (B : A → Type ℓ') → isProp A → ((x : A) → isProp (B x)) → isProp (Σ A B)
+isPropΣ B P Q (a , b) (a' , b') = Σ≡ (P a a') {!!}
+
+Dec : Type ℓ → Type ℓ
+Dec A = A ⊎ ¬ A
+
+isPropDec : {A : Type ℓ} → isProp A → isProp (Dec A)
+isPropDec P (inl x) (inl y) = cong (λ z → inl z) (P x y)
+isPropDec P (inl x) (inr f) = ⊥-rec (f x)
+isPropDec P (inr g) (inl y) = ⊥-rec (g y)
+isPropDec P (inr g) (inr f) = cong (λ z → inr z) (isProp→ isProp⊥ g f)
+
+hProp : (ℓ : Level) → Type (ℓ-suc ℓ)
+hProp ℓ = Σ (Type ℓ) isProp
+
+_∧_ : hProp ℓ → hProp ℓ → hProp ℓ
+_∧_ (P , PP)  (Q , QP) = (P × Q , isProp× PP QP )
+
+sub : {A : Type ℓ} (P : A → hProp ℓ) → Type ℓ
+sub {A = A} P = Σ A (fst ∘ P)
+
+subInj : {A : Type ℓ} (P : A → hProp ℓ) {x y : sub P} → fst x ≡ fst y → x ≡ y
+subInj P p =  {!!}
