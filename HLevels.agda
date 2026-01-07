@@ -67,7 +67,7 @@ isProp→isProp' : {A : Type ℓ} → isProp A → isProp' A
 isProp→isProp' P x y = isContr→isContrPath (isProp→isContr P x) x y
 
 isPropIsContr : {A : Type ℓ} → isProp (isContr A)
-isPropIsContr {A = A }(x , px) (y , py) = Σ≡ (px y) (funExt λ z → {!!})
+isPropIsContr {A = A }(x , px) (y , py) = Σ≡ (px y) (funExt λ z →  isContr→isProp (isContr→isContrPath ((y , py)) y z) (subst (λ x₁ → (y₁ : A) → x₁ ≡ y₁) (px y) px z) (py z)  )
 
 isPropIsProp : {A : Type ℓ} → isProp (isProp A)
 isPropIsProp P Q = funExt λ x → funExt λ y → isContr→isProp (isContr→isContrPath (isProp→isContr P x) x y) (P x y) (Q x y)
@@ -91,7 +91,7 @@ isProp¬ : {A : Type ℓ} → isProp (¬ A)
 isProp¬ f g = funExt (λ z → isProp⊥ (f z) (g z))
 
 isPropΣ : {A : Type ℓ} (B : A → Type ℓ') → isProp A → ((x : A) → isProp (B x)) → isProp (Σ A B)
-isPropΣ B P Q (a , b) (a' , b') = Σ≡ (P a a') {!!}
+isPropΣ B P Q (a , b) (a' , b') = Σ≡ (P a a') (Q a' (subst B (P a a') b) b')
 
 Dec : Type ℓ → Type ℓ
 Dec A = A ⊎ ¬ A
