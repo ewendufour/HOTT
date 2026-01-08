@@ -67,10 +67,18 @@ isProp→isProp' : {A : Type ℓ} → isProp A → isProp' A
 isProp→isProp' P x y = isContr→isContrPath (isProp→isContr P x) x y
 
 isPropIsContr : {A : Type ℓ} → isProp (isContr A)
-isPropIsContr {A = A }(x , px) (y , py) = Σ≡ (px y) (funExt λ z →  isContr→isProp (isContr→isContrPath ((y , py)) y z) (subst (λ x₁ → (y₁ : A) → x₁ ≡ y₁) (px y) px z) (py z)  )
+isPropIsContr {A = A }(x , px) (y , py) =
+  Σ≡ (px y)
+     (funExt λ z →  isContr→isProp (isContr→isContrPath ((y , py)) y z)
+                                   (subst (λ x₁ → (y₁ : A) → x₁ ≡ y₁) (px y) px z)
+                                   (py z))
 
 isPropIsProp : {A : Type ℓ} → isProp (isProp A)
-isPropIsProp P Q = funExt λ x → funExt λ y → isContr→isProp (isContr→isContrPath (isProp→isContr P x) x y) (P x y) (Q x y)
+isPropIsProp P Q =
+  funExt λ x →
+    funExt λ y →
+      isContr→isProp (isContr→isContrPath (isProp→isContr P x) x y)
+                     (P x y) (Q x y)
 
 isProp× : {A : Type ℓ} {B : Type ℓ'} → isProp A → isProp B → isProp (A × B)
 isProp× P Q (a , b) (a' , b') = ×≡ (P a a') (Q b b')
@@ -112,4 +120,23 @@ sub : {A : Type ℓ} (P : A → hProp ℓ) → Type ℓ
 sub {A = A} P = Σ A (fst ∘ P)
 
 subInj : {A : Type ℓ} (P : A → hProp ℓ) {x y : sub P} → fst x ≡ fst y → x ≡ y
-subInj P p =  {!!}
+subInj P {x = x , Px} {y = y , Py} p = Σ≡ p (P y .snd (subst (λ z → fst (P z)) p Px) Py)
+
+--- Part 3
+
+isSet : Type ℓ → Type ℓ
+isSet A = (x y : A) → isProp (x ≡ y)
+
+isSet⊤ : isSet ⊤
+isSet⊤ tt tt refl refl = refl
+
+isSetBool : isSet Bool
+isSetBool true true refl refl = refl
+isSetBool false false refl refl = refl
+
+
+isSetℕ : isSet ℕ
+isSetℕ zero zero refl refl = refl
+isSetℕ zero (suc n') () 
+isSetℕ (suc n) zero ()
+isSetℕ (suc n) (suc n') p q = {!!}
