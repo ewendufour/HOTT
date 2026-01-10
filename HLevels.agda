@@ -127,16 +127,155 @@ subInj P {x = x , Px} {y = y , Py} p = Σ≡ p (P y .snd (subst (λ z → fst (P
 isSet : Type ℓ → Type ℓ
 isSet A = (x y : A) → isProp (x ≡ y)
 
+
+
 isSet⊤ : isSet ⊤
 isSet⊤ tt tt refl refl = refl
+
+
 
 isSetBool : isSet Bool
 isSetBool true true refl refl = refl
 isSetBool false false refl refl = refl
 
 
-isSetℕ : isSet ℕ
-isSetℕ zero zero refl refl = refl
-isSetℕ zero (suc n') () 
-isSetℕ (suc n) zero ()
-isSetℕ (suc n) (suc n') p q = {!!}
+
+code : ℕ → ℕ → Type
+code zero zero =  ⊤
+code zero (suc m) = ⊥
+code (suc n) zero = ⊥
+code (suc n) (suc m) = code n m
+
+codePathEquiv : (n m : ℕ) → (p q : code n m) → p ≡ q
+codePathEquiv zero zero tt tt = refl
+codePathEquiv (suc n) (suc m) p q = codePathEquiv n m p q
+
+r : (n : ℕ) → code n n
+r 0 = tt
+r (suc n) = r n
+
+encode : (n m : ℕ) → (n ≡ m) → code n m
+encode n m p = subst (code n) p (r n)
+  
+decode : (n m : ℕ) → code n m → n ≡ m
+decode zero zero = λ _ → refl
+decode zero (suc m) = λ ()
+decode (suc n) zero = λ ()
+decode (suc n) (suc m) = λ c → cong suc (decode n m c)
+
+decnn : (n : ℕ) → decode n n (r n) ≡ refl
+decnn zero = refl
+decnn (suc n) = cong (cong suc) (decnn n)
+
+decInvEnc : (n m : ℕ) → (p : n ≡ m) → decode n m (encode n m p) ≡ p
+decInvEnc n n refl =
+  decode n n (encode n n refl) ≡⟨ refl ⟩
+  decode n n (r n) ≡⟨ decnn n ⟩
+  refl ∎
+     
+isSetℕ : isSet ℕ 
+isSetℕ n m p q =
+  p ≡⟨ sym (decInvEnc n m p) ⟩
+  decode n m (encode n m p) ≡⟨ cong (λ p → decode n m p) (codePathEquiv n m (encode n m p) (encode n m q)) ⟩
+  decode n m (encode n m q) ≡⟨ decInvEnc n m q ⟩
+  q ∎
+
+
+
+isProp→isSet : {A : Type ℓ} → isProp A → isSet A
+isProp→isSet P x y = isContr→isProp (isContr→isContrPath (isProp→isContr P x) x y)
+
+
+
+isSet× : {A : Type ℓ} {B : Type ℓ'} → isSet A → isSet B → isSet (A × B)
+isSet× sA sB (x , y) (x' , y') p q =
+  p ≡⟨ split p ⟩
+  ×≡ (cong fst p) (cong snd p) ≡⟨ cong (λ t → ×≡ t (cong snd p)) (sA x x' (cong fst p) (cong fst q)) ⟩
+  ×≡ (cong fst q) (cong snd p) ≡⟨ cong (λ t → ×≡ (cong fst q) t) (sB y y' (cong snd p) (cong snd q)) ⟩
+  ×≡ (cong fst q) (cong snd q) ≡⟨ sym (split q) ⟩
+  q ∎
+
+  where
+    split : {A : Type ℓ} {B : Type ℓ'} → {x y : A × B} → (p : x ≡ y) → p ≡ ×≡ (cong fst p) (cong snd p) 
+    split refl = refl
+
+  
+isPropIsSet : {A : Type ℓ} → isProp (isSet A)
+isPropIsSet f g = funExt λ x → funExt λ y → isPropIsProp (f x y) (g x y)
+
+--- Part 4
+
+Stable : Type ℓ → Type ℓ
+Stable A = ¬ (¬ A) → A
+
+Dec→Stable : {A : Type ℓ} → Dec A → Stable A
+Dec→Stable (inl a) f = a
+Dec→Stable (inr na) f = ⊥-rec (f na)
+
+Separated : Type ℓ → Type ℓ
+Separated A = (x y : A) → Stable (x ≡ y)
+
+Discrete : Type ℓ → Type ℓ
+Discrete A = (x y : A) → Dec (x ≡ y)
+
+Discrete→Separated : {A : Type ℓ} → Discrete A → Separated A
+Discrete→Separated da x y = Dec→Stable (da x y)
+
+Separated→isSet : {A : Type ℓ} → Separated A → isSet A
+Separated→isSet {A = A} sA x y p q =
+  p ≡⟨ lemma x y sA p ⟩
+  tilde x y sA p ∙ sym (tilde y y sA refl) ≡⟨ cong (λ r → (sA x y r) ∙ sym (tilde y y sA refl)) (isProp¬¬ (bar p) (bar q)) ⟩
+  sA x y (bar q) ∙ sym (tilde y y sA refl) ≡⟨ sym (lemma x y sA q) ⟩
+  q ∎
+  
+  where
+  bar : {a b : A} → (r : a ≡ b) → ¬ (¬ a ≡ b)
+  bar r nq = nq r
+
+  tilde : (a b : A) → (sA : Separated A) → (r : a ≡ b) → a ≡ b
+  tilde a b sA r = sA a b (bar r)
+
+  lemma : (x y : A) → (sA : Separated A) → (r : x ≡ y) → r ≡ (tilde x y sA r) ∙ (sym ( tilde y y sA  refl))
+  lemma x x sA refl = sym (rCancel (sA x x (bar refl)))
+
+  isProp¬¬ : isProp (¬ (¬ (x ≡ y)))
+  isProp¬¬ = isProp→ (isProp⊥)
+
+
+Discrete→isSet : {A : Type ℓ} → Discrete A → isSet A
+Discrete→isSet dA = Separated→isSet (Discrete→Separated dA)
+
+sucInj : (n m : ℕ) → suc n ≡ suc m → n ≡ m
+sucInj n m refl = refl
+
+Discreteℕ : Discrete ℕ
+Discreteℕ zero zero = inl refl
+Discreteℕ zero (suc m) = inr (λ ())
+Discreteℕ (suc n) zero = inr (λ ())
+Discreteℕ (suc n) (suc m) = lemma (Discreteℕ n m)
+  where
+  lemma : Dec (n ≡ m) → Dec (suc n ≡ suc m)
+  lemma (inl p) = inl (cong suc p)
+  lemma (inr f) = inr (λ p → f (sucInj n m p))
+
+
+isSetℕ' : isSet ℕ
+isSetℕ' = Discrete→isSet Discreteℕ
+
+--- Part 5
+
+isGroupoid : Type ℓ → Type ℓ
+isGroupoid A = (x y : A) → isSet (x ≡ y)
+
+isSet→isGroupoid : {A : Type ℓ} → isSet A → isGroupoid A
+isSet→isGroupoid sA x y = isProp→isSet (sA x y)
+
+--- Part 6
+
+HLevel : Type
+HLevel = ℕ
+
+isOfHLevel : HLevel → Type ℓ → Type ℓ
+isOfHLevel zero A = isContr A
+isOfHLevel (suc n) A = (x y : A) → isOfHLevel n (x ≡ y)
+
