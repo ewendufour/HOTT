@@ -279,3 +279,12 @@ isOfHLevel : HLevel → Type ℓ → Type ℓ
 isOfHLevel zero A = isContr A
 isOfHLevel (suc n) A = (x y : A) → isOfHLevel n (x ≡ y)
 
+isOfHLevelSuc : {A : Type ℓ} (n : HLevel) → isOfHLevel n A → isOfHLevel (suc n) A
+isOfHLevelSuc zero hlA x y = isContr→isContrPath hlA x y
+isOfHLevelSuc (suc n) hlA x y = isOfHLevelSuc n (hlA x y)
+
+isPropIsOfHLevel : {A : Type ℓ} (n : HLevel) → isProp (isOfHLevel n A)
+isPropIsOfHLevel zero = isPropIsContr
+isPropIsOfHLevel (suc n) f g = funExt (λ x → funExt λ y → isPropIsOfHLevel n (f x y) (g x y))
+
+
