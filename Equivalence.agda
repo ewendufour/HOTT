@@ -3,6 +3,7 @@
 open import Prelude
 open import Path
 open import HLevels
+open import FunExtPostulate
 
 private variable
   ℓ ℓ' ℓ'' : Level
@@ -124,7 +125,7 @@ infixr  0 _≃⟨_⟩_
 infix   1 _■
 
 equivEq : {A : Type ℓ} {B : Type ℓ'} {e e' : A ≃ B} → equivFun e ≡ equivFun e' → e ≡ e'
-equivEq eq = {!!}
+equivEq {e = f ,  fi} {e' = g , gi} eq = Σ≡ eq (isPropIsEquiv g (subst isEquiv eq fi) gi)
 
 --- Part 3
 
@@ -164,11 +165,109 @@ not≃ = not , hasQInv→isEquiv not (not , ((λ x → notInvol x) , λ x → no
   invr (refl , refl) = refl
 
 Σ≡Equiv : {A : Type ℓ} (B : A → Type ℓ') {x x' : A} {y : B x} {y' : B x'} → ((x , y) ≡ (x' , y')) ≃ Σ (x ≡ x') (λ p → PathOver B p y y')
-Σ≡Equiv B {x = x} {x' = x'} {y = y} {y' = y'} = isoToEquiv f
+Σ≡Equiv B {x = x} {x' = x'} {y = y} {y' = y'} = isoToEquiv (Σsplit , (Σ≡' , (invl , invr)))
   where
 
-  f : Iso ((x , y) ≡ (x' , y')) (Σ (x ≡ x') (λ p → PathOver B p y y'))
-  f = {!!} , {!!}
+  Σsplit : (p : (x , y) ≡ (x' , y')) → Σ (x ≡ x') (λ p → PathOver B p y y')
+  Σsplit refl = refl , refl
+
+  Σ≡' : (Σ (x ≡ x') (λ p → PathOver B p y y')) → (x , y) ≡ (x' , y')
+  Σ≡' (refl , q) = Σ≡ refl q
+
+  invl : (λ z → Σ≡' (Σsplit z)) ∼ id
+  invl refl = refl
+
+  invr : (λ z → Σsplit (Σ≡' z)) ∼ id
+  invr (refl , refl) = refl
 
 
+--- Part 5
+
+
+assoc× : {A B C : Type ℓ} → (A × B) × C ≃ A × (B × C)
+assoc× {A = A} {B = B} {C = C} = isoToEquiv (f , (g , (invl , invr)))
+ where
+ f : (A × B) × C → A × B × C
+ f ((a , b)  , c) = a , b , c
+
+ g : A × B × C → (A × B) × C
+ g (a , b , c) = ((a , b) , c)
+
+ invl : g ∘ f ∼ id
+ invl x = refl
+
+ invr : f ∘ g ∼ id
+ invr x = refl
+
+assoc⊎ : {A B C : Type ℓ} → ((A ⊎ B) ⊎ C) ≃ (A ⊎ (B ⊎ C))
+assoc⊎ {A = A} {B = B} {C = C} = isoToEquiv (f , (g , (invl , invr)))
+  where
+  f : ((A ⊎ B) ⊎ C) → A ⊎ (B ⊎ C)
+  f (inl (inl x)) = inl x
+  f (inl (inr x)) = inr (inl x)
+  f (inr x) =  inr (inr x)
+
+  g : A ⊎ (B ⊎ C) → (A ⊎ B) ⊎ C
+  g (inl x) = inl (inl x)
+  g (inr (inl x)) = inl (inr x)
+  g (inr (inr x)) = inr x
+
+  invl : g ∘ f ∼ id
+  invl (inl (inl x)) = refl
+  invl (inl (inr x)) = refl
+  invl (inr x) = refl
+
+  invr : f ∘ g ∼ id
+  invr (inl x) = refl
+  invr (inr (inl x)) = refl
+  invr (inr (inr x)) = refl
+
+univ× : {X A B : Type ℓ} → (X → A × B) ≃ (X → A) × (X → B)
+univ× {X = X} {A = A} {B = B} = isoToEquiv (f , (g , (invl , invr)))
+  where
+
+  f : (X → A × B) → (X → A) × (X → B)
+  f m = (fst ∘ m , snd ∘ m)
+
+  g : (X → A) × (X → B) → (X → A × B)
+  g (l , r) x = (l x , r x)
+
+  invl : g ∘ f ∼ id
+  invl h = funExt λ x → refl
+
+  invr : f ∘ g ∼ id
+  invr (m , n) = refl
+
+×≃Bool→ : {A B : Type ℓ} → A × B ≃ ((b : Bool) → if b then A else B)
+×≃Bool→ {A = A} {B = B} = isoToEquiv (f , g , (invl , invr))
+  where
+
+  f : A × B → ((b : Bool) → if b then A else B)
+  f x true = x .fst
+  f x false = x .snd
+
+  g : ((b : Bool) → if b then A else B) → A × B
+  g m = (m true , m false)
+
+  invl : g ∘ f ∼ id
+  invl x = refl
+
+  invr : f ∘ g ∼ id
+  invr m = funExt (λ {true → refl ; false → refl })
+
+ttchoice : {X : Type ℓ} {A : X → Type ℓ'} {B : (x : X) → A x → Type ℓ''} → ((x : X) → Σ (A x) (λ a → B x a)) ≃ Σ ((x : X) → A x) (λ f → (x : X) → B x (f x))
+ttchoice {X = X} {A = A} {B = B} = isoToEquiv (f , (g , (invl  , invr)))
+  where
+
+  f : ((x : X) → Σ (A x) (λ a → B x a)) → Σ ((x : X) → A x) (λ f → (x : X) → B x (f x))
+  f m = ( fst ∘ m , snd ∘ m)
+
+  g :  Σ ((x : X) → A x) (λ f → (x : X) → B x (f x)) → ((x : X) → Σ (A x) (λ a → B x a))
+  g (m , n) x = (m x) , (n x)
+
+  invl : g ∘ f ∼ id
+  invl m = funExt (λ x → refl)
+
+  invr : f ∘ g ∼ id
+  invr x = refl
 
