@@ -139,6 +139,19 @@ isContr→≃⊤  (x , f) = (λ _ → tt) , ((λ _ → x) , λ y → f y) , (λ 
 ≃⊤→isContr : {A : Type} → A ≃ ⊤ → isContr A
 ≃⊤→isContr eq = invEq eq tt , λ y → eq .snd .fst .snd y
 
+↔≃ : {A : Type ℓ} {B : Type ℓ'} → (pA : isProp A) → (pB : isProp B) → (A ↔ B) ↔ (A ≃ B)
+↔≃ {A = A} {B = B} pA pB = (left , right)
+  where
+    left : A ↔ B → A ≃ B
+    left (f , g) = isoToEquiv (f , (g , ((λ x → pA (g (f x)) x) , λ x → pB (f (g x)) (id x))))
+
+    right : A ≃ B → A ↔ B
+    right eqAB = (equivFun eqAB) , (invEq eqAB)
+
+isContr≃≃⊤ : {A : Type} → isContr A ≃ (A ≃ ⊤)
+isContr≃≃⊤ = ↔≃ (isPropIsContr) (isPropΣ isEquiv (isProp→ isProp⊤) isPropIsEquiv) .fst (isContr→≃⊤ , ≃⊤→isContr)
+
+
 not : Bool → Bool
 not false = true
 not true = false
