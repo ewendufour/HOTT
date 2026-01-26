@@ -35,15 +35,16 @@ univalence = pathToEquiv , isEquivPathToEquiv
 ua : {A B : Type ℓ} → A ≃ B → A ≡ B
 ua eqAB = invEq univalence eqAB
 
-uaβ : {A B : Type ℓ} (e : A ≃ B) → transport (ua e) ≡ equivFun e
-uaβ e = trans (sym (pathToEquivTest (ua e))) (cong fst lemma)
-  where
-    lemma : pathToEquiv (ua e) ≡ e 
-    lemma =
-      pathToEquiv (ua e) ≡⟨ secEq univalence e ⟩
-      id e ≡⟨ refl ⟩
-      e ∎
+uβ : {A B : Type ℓ} → (e : A ≃ B) → pathToEquiv (ua e) ≡ e 
+uβ e =
+  pathToEquiv (ua e) ≡⟨ secEq univalence e ⟩
+  id e ≡⟨ refl ⟩
+  e ∎
 
+
+uaβ : {A B : Type ℓ} (e : A ≃ B) → transport (ua e) ≡ equivFun e
+uaβ e = trans (sym (pathToEquivTest (ua e))) (cong fst (uβ e))
+    
 uaη : {A B : Type ℓ} (p : A ≡ B) → ua (pathToEquiv p) ≡ p
 uaη p = retEq univalence p
 
@@ -71,7 +72,12 @@ is¬≃≡⊥ = compEquiv (↔≃ (isProp→ isProp⊥) (isPropΣ isEquiv (isPro
 ≃ind : (P : {A B : Type ℓ} → (A ≃ B) → Type ℓ') →
        ({A : Type ℓ} → P (idEquiv {A = A})) →
        {A B : Type ℓ} (e : A ≃ B) → P e
-≃ind P Pi {A = A} {B = B} e = {!!}
+≃ind P Pi {A = A} {B = B} e = transport (cong P (uβ e)) (f (ua e))
+  where
+  f : (p : A ≡ B) → P (pathToEquiv p )
+  f refl = Pi
+
+      
 
 --- Part 4
 
