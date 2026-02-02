@@ -142,6 +142,24 @@ precomp≃ {A = A} {B = B} {C = C} e = isoToEquiv (f , (g , (η , ϵ)))
   ϵ : f ∘ g ∼ id
   ϵ h = funExt (λ a → cong h (retEq e a))
 
+
+postcomp≃ : {A : Type ℓ} {B : Type ℓ'} {C : Type ℓ''} (e : A ≃ B) → (C → A) ≃ (C → B)
+postcomp≃ {A = A} {B = B} {C = C} e = isoToEquiv (f , (g , (η , ϵ)))
+  where
+
+  f : (C → A) → C → B
+  f h c = (equivFun e) (h c)
+
+  g : (C → B) → C → A
+  g h c = (invEq e) (h c)
+
+  η : g ∘ f ∼ id
+  η h = funExt λ c → retEq e (h c)
+
+  ϵ : f ∘ g ∼ id
+  ϵ h = funExt λ c → secEq e (h c)
+
+
 substIsContr≃ : {A : Type ℓ} {B : Type ℓ'} → A ≃ B → isContr A → isContr B
 substIsContr≃ {A = A} {B = B} e (a , p) = f a , λ y → cong f (p (g y)) ∙ (secEq e y)
   where
@@ -169,10 +187,52 @@ substIsContr≃ {A = A} {B = B} e (a , p) = f a , λ y → cong f (p (g y)) ∙ 
   ϵ (a , h) = Σ≡ refl (secEq (e a) h)
   
 isContrHasLInv : {A : Type ℓ} {B : Type ℓ'} (e : A ≃ B) → isContr (hasLInv (equivFun e))
-isContrHasLInv {A = A} {B = B} e = {!!}
+isContrHasLInv {A = A} {B = B} e = substIsContr≃ eq' (icf id)
   where
 
   f : A → B
   f = equivFun e
 
+  eq : (B → A) ≃ (A → A)
+  eq = precomp≃ e
+
+  eq' : fiber (λ g → g ∘ f) id ≃ hasLInv f
+  eq' = ΣEquiv λ g → isoToEquiv ((λ p → happly p) , (λ p → funExt p) , (funExtη , funExtβ))
+
+  icf : hasContrFibers (λ g → g ∘ f)
+  icf = isEquiv→hasContrFibers eq
+
+isContrHasRInv : {A : Type ℓ} {B : Type ℓ'} (e : A ≃ B) → isContr (hasRInv (equivFun e))
+isContrHasRInv {A = A} {B = B} e = substIsContr≃ eq' (icf id)
+  where
+
+  f : A → B
+  f = equivFun e
+
+  eq : (B → A) ≃ (B → B)
+  eq = postcomp≃ e
   
+  eq' : fiber (λ g → f ∘ g) id ≃ hasRInv f
+  eq' = ΣEquiv λ g → isoToEquiv ((λ p → happly p) , (λ p → funExt p) , (funExtη , funExtβ))
+
+  icf : hasContrFibers (λ g → f ∘ g)
+  icf = isEquiv→hasContrFibers eq
+
+isPropIsEquiv : {A : Type ℓ} {B : Type ℓ'} (f : A → B) → isProp (isEquiv f)
+isPropIsEquiv {A = A} {B = B} f (li , ri) (li' , ri') = ×≡ (isContr→isProp (isContrHasLInv h) li li') (isContr→isProp (isContrHasRInv h) ri ri')
+  where
+
+  h : A ≃ B
+  h = (f , li , ri)
+
+equivEq : {A : Type ℓ} {B : Type ℓ'} {e e' : A ≃ B} → equivFun e ≡ equivFun e' → e ≡ e'
+equivEq {e = f ,  fi} {e' = g , gi} eq = Σ≡ eq (isPropIsEquiv g (subst isEquiv eq fi) gi)
+
+
+--- Part 4
+
+isEmbedding : {A : Type ℓ} {B : Type ℓ'} (f : A → B) → Type (ℓ-max ℓ ℓ')
+isEmbedding {A = A} f = (x y : A) → isEquiv (cong f {x = x} {y = y})
+
+hasPFibers : {A : Type ℓ} {B : Type ℓ'} (f : A → B) → Type (ℓ-max ℓ ℓ')
+hasPFibers {B = B} f = (y : B) → isProp (fiber f y)
