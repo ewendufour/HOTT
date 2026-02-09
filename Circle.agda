@@ -6,6 +6,7 @@ open import HLevels
 open import Equivalence
 open import FunExtPostulate
 open import Univalence
+open import Int
 
 private variable
   ℓ ℓ' ℓ'' : Level
@@ -33,17 +34,31 @@ postulate
 --- Part 2
 
 Circle-rec : {A : Type ℓ} (b : A) (l : b ≡ b) → (x : Circle) → A
-Circle-rec {A = A} b l = Circle-ind (λ _ → A) b (substConst loop b)
+Circle-rec {A = A} b l = Circle-ind (λ _ → A) b (substConst loop b ∙ l)
 
 Circle-comp-base-nd : {P : Type ℓ} (b : P) (l : b ≡ b) → Circle-rec b l base ≡ b
-Circle-comp-base-nd {P = P} b l = Circle-comp-base (λ _ → P) b (substConst loop b)
+Circle-comp-base-nd {P = P} b l = Circle-comp-base (λ _ → P) b (substConst loop b ∙ l)
 
 rev : Circle → Circle
 rev x = Circle-rec base (sym loop) x
 
-postulate
-  Circle-comp-loop-nd : {P : Type ℓ} (b : P) (l : b ≡ b) → cong (Circle-rec b l) loop ≡ l
+Circle-comp-loop-nd : {P : Type ℓ} (b : P) (l : b ≡ b) → cong (Circle-rec b l) loop ≡ l
+Circle-comp-loop-nd {P = P}b l =
+  cong (Circle-ind (λ _ → P)  b (substConst loop b ∙ l)) loop ≡⟨ lemma loop ⟩
+  sym (substConst loop (Circle-ind (λ _ → P) b (substConst loop b ∙ l) base)) ∙
+  congP (λ _ → P) (Circle-ind (λ _ → P) b (substConst loop b ∙ l)) loop ≡⟨ cong (λ z → sym ( substConst loop (Circle-ind (λ _ → P) b (substConst loop b ∙ l) base)) ∙ z) (Circle-comp-loop (λ _ → P) b (substConst loop b ∙ l)) ⟩
+  sym (substConst loop (Circle-ind (λ _ → P) b (substConst loop b ∙ l) base))
+  ∙ substConst loop b ∙ l ≡⟨ refl ⟩
+  sym (substConst loop b) ∙ substConst loop b ∙ l ≡⟨ sym (assoc (sym (substConst loop b)) (substConst loop b) l )⟩
+  (sym (substConst loop b) ∙ substConst loop b) ∙ l ≡⟨ cong (λ z → z ∙ l) (lCancel (substConst loop b)) ⟩
+  refl ∙ l ≡⟨ refl ⟩
+  l ∎
+  
+  where
 
+  lemma : {A : Type ℓ} {B : Type ℓ'} {f : A → B} {x y : A} (p : x ≡ y) → cong f p ≡ sym (substConst p (f x)) ∙ congP _  f p
+  lemma refl = refl
+  
 loop≢refl : ¬ (loop ≡ refl)
 loop≢refl lr = true≢false teqf
   where
@@ -92,7 +107,7 @@ Loops : Type ℓ → Type ℓ
 Loops A = Σ A (λ x → x ≡ x)
 
 Circle≡Loops : {A : Type ℓ} → (Circle → A) ≡ Loops A
-Circle≡Loops {A = A} = ua (isoToEquiv ({!!} , ({!!} , ({!!} , {!!}))))
+Circle≡Loops {A = A} = ua (isoToEquiv (f , (g , (η , ϵ))))
   where
 
   f : (Circle → A) → Loops A
@@ -104,10 +119,48 @@ Circle≡Loops {A = A} = ua (isoToEquiv ({!!} , ({!!} , ({!!} , {!!}))))
   η : g ∘ f ∼ id
   η h =
     (g ∘ f) h ≡⟨ refl ⟩
-    Circle-rec (h base) (cong h loop) ≡⟨ funExt (Circle-unique (Circle-rec (h base) (cong h loop)) h (Circle-comp-base-nd (h base) (cong h loop)) {!!}) ⟩
-    h ∎
+      Circle-rec (h base) (cong h loop) ≡⟨ funExt (Circle-unique (Circle-rec (h base) (cong h loop)) h refl (cong id (Circle-comp-loop-nd (h base) (cong h loop)))) ⟩
+    h ∎    
     
   ϵ : f ∘ g ∼ id
-  ϵ x = {!!}
+  ϵ (a , p) =
+    (Circle-rec a p base , cong (Circle-rec a p) loop)  ≡⟨ Σ≡ refl (cong id (Circle-comp-loop-nd a p)) ⟩
+    (a , p) ∎
 
 --- Part 2
+
+suc≃ : ℤ ≃ ℤ
+suc≃ = isoToEquiv (f , (g , (η , ϵ)))
+  where
+
+  f : ℤ → ℤ
+  f = sucℤ
+
+  g : ℤ → ℤ
+  g = predℤ
+
+  η : g ∘ f ∼ id
+  η (pos n) = refl
+  η (negsuc zero) = refl
+  η (negsuc (suc n)) = refl
+
+  ϵ : f ∘ g ∼ id
+  ϵ (pos zero) = refl
+  ϵ (pos (suc n)) = refl
+  ϵ (negsuc n) = refl
+
+suc≡ : ℤ ≡ ℤ
+suc≡ = ua suc≃
+
+
+loops : ℤ → base ≡ base
+loops (pos zero) = refl
+loops (pos (suc n)) = loop ∙ loops (pos n)
+loops (negsuc zero) = sym loop
+loops (negsuc (suc n)) = sym loop ∙ loops (negsuc n)
+
+code : Circle → Type
+code x = base ≡ x
+
+encode : (x : Circle) → base ≡ x → code x
+encode x p = subst code p (loops (pos zero))

@@ -140,38 +140,8 @@ isSetBool false false refl refl = refl
 
 
 
-code : ℕ → ℕ → Type
-code zero zero =  ⊤
-code zero (suc m) = ⊥
-code (suc n) zero = ⊥
-code (suc n) (suc m) = code n m
 
-codePathEquiv : (n m : ℕ) → (p q : code n m) → p ≡ q
-codePathEquiv zero zero tt tt = refl
-codePathEquiv (suc n) (suc m) p q = codePathEquiv n m p q
 
-r : (n : ℕ) → code n n
-r 0 = tt
-r (suc n) = r n
-
-encode : (n m : ℕ) → (n ≡ m) → code n m
-encode n m p = subst (code n) p (r n)
-  
-decode : (n m : ℕ) → code n m → n ≡ m
-decode zero zero = λ _ → refl
-decode zero (suc m) = λ ()
-decode (suc n) zero = λ ()
-decode (suc n) (suc m) = λ c → cong suc (decode n m c)
-
-decnn : (n : ℕ) → decode n n (r n) ≡ refl
-decnn zero = refl
-decnn (suc n) = cong (cong suc) (decnn n)
-
-decInvEnc : (n m : ℕ) → (p : n ≡ m) → decode n m (encode n m p) ≡ p
-decInvEnc n n refl =
-  decode n n (encode n n refl) ≡⟨ refl ⟩
-  decode n n (r n) ≡⟨ decnn n ⟩
-  refl ∎
      
 isSetℕ : isSet ℕ 
 isSetℕ n m p q =
@@ -179,6 +149,41 @@ isSetℕ n m p q =
   decode n m (encode n m p) ≡⟨ cong (λ p → decode n m p) (codePathEquiv n m (encode n m p) (encode n m q)) ⟩
   decode n m (encode n m q) ≡⟨ decInvEnc n m q ⟩
   q ∎
+
+  where
+ 
+  code : ℕ → ℕ → Type
+  code zero zero =  ⊤
+  code zero (suc m) = ⊥
+  code (suc n) zero = ⊥
+  code (suc n) (suc m) = code n m
+
+  codePathEquiv : (n m : ℕ) → (p q : code n m) → p ≡ q
+  codePathEquiv zero zero tt tt = refl
+  codePathEquiv (suc n) (suc m) p q = codePathEquiv n m p q
+
+  r : (n : ℕ) → code n n
+  r 0 = tt
+  r (suc n) = r n
+
+  encode : (n m : ℕ) → (n ≡ m) → code n m
+  encode n m p = subst (code n) p (r n)
+  
+  decode : (n m : ℕ) → code n m → n ≡ m
+  decode zero zero = λ _ → refl
+  decode zero (suc m) = λ ()
+  decode (suc n) zero = λ ()
+  decode (suc n) (suc m) = λ c → cong suc (decode n m c)
+  decnn : (n : ℕ) → decode n n (r n) ≡ refl
+  decnn zero = refl
+  decnn (suc n) = cong (cong suc) (decnn n)
+
+
+  decInvEnc : (n m : ℕ) → (p : n ≡ m) → decode n m (encode n m p) ≡ p
+  decInvEnc n n refl =
+    decode n n (encode n n refl) ≡⟨ refl ⟩
+    decode n n (r n) ≡⟨ decnn n ⟩
+    refl ∎
 
 
 
