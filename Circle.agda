@@ -4,6 +4,7 @@ open import Prelude
 open import Path
 open import HLevels
 open import Equivalence
+open import EquivalenceDefinitions
 open import FunExtPostulate
 open import Univalence
 open import Int
@@ -114,18 +115,14 @@ Circle-unique f g p q = Circle-ind (λ x → f x ≡ g x) p path
     subst (λ z → f z ≡ g z) loop p ≡⟨ substInPaths f g loop p ⟩
     sym (cong f loop) ∙ p ∙ cong g loop ≡⟨ cong (λ z → sym (cong f loop) ∙ z ∙ cong g loop) (symInvo p) ⟩
     sym (cong f loop) ∙ sym (sym p) ∙ cong g loop ≡⟨ sym (assoc (sym (cong f loop)) (sym (sym p)) (cong g loop)) ⟩
-    (sym (cong f loop) ∙ sym (sym p)) ∙ cong g loop ≡⟨ cong (λ z → z ∙ cong g loop) (sym (st (sym p) (cong f loop))) ⟩
+    (sym (cong f loop) ∙ sym (sym p)) ∙ cong g loop ≡⟨ cong (λ z → z ∙ cong g loop) (sym (symDist (sym p) (cong f loop))) ⟩
     sym (sym p ∙ cong f loop) ∙ cong g loop ≡⟨ cong (λ z → sym (sym z ∙ cong f loop) ∙ cong g loop) (sym (congId p)) ⟩
     sym (sym (cong id p) ∙ cong f loop) ∙ cong g loop ≡⟨ rotate∙≡ (sym (cong id p) ∙ cong f loop) (cong id p) (cong g loop) path' ⟩
     cong id p ≡⟨ congId p ⟩
     p ∎
     where
 
-    st : {A : Type ℓ} {x y z : A} (p : x ≡ y) (q : y ≡ z) → sym (p ∙ q) ≡ sym q ∙ sym p
-    st p refl =
-      sym (p ∙ refl) ≡⟨ cong sym (sym (rUnit p)) ⟩
-      sym p ∎
-
+    
     path' : (sym (cong id p) ∙  cong f loop) ∙ cong id p ≡ cong g loop
     path' =
       (sym (cong id p) ∙ cong f loop) ∙ cong id p ≡⟨ assoc (sym (cong id p)) (cong f loop) (cong id p) ⟩
@@ -195,6 +192,29 @@ suc≃ = isoToEquiv (f , (g , (η , ϵ)))
 suc≡ : ℤ ≡ ℤ
 suc≡ = ua suc≃
 
+pred≃ : ℤ ≃ ℤ
+pred≃ = isoToEquiv (f , (g , (η , ϵ)))
+  where
+
+  g : ℤ → ℤ
+  g = sucℤ
+
+  f : ℤ → ℤ
+  f = predℤ
+
+  η : g ∘ f ∼ id
+  η (negsuc n) = refl
+  η (pos zero) = refl
+  η (pos (suc n)) = refl
+
+  ϵ : f ∘ g ∼ id
+  ϵ (negsuc zero) = refl
+  ϵ (negsuc (suc n)) = refl
+  ϵ (pos n) = refl
+
+pred≡ : ℤ ≡ ℤ
+pred≡ = ua pred≃
+
 
 loops : ℤ → base ≡ base
 loops (pos zero) = refl
@@ -215,8 +235,26 @@ substLoop n  =
   subst id suc≡ n ≡⟨ cong (λ z → z n) (uaβ suc≃) ⟩ 
   sucℤ n ∎
 
-postulate 
-  substSymLoop : (n : ℤ) → subst code (sym loop) n ≡ predℤ n
+
+symEquiv : {A : Type ℓ} {B : Type ℓ} (e : A ≃ B) → sym (ua e) ≡ ua (invEquiv e)
+symEquiv e = ≃ind (λ z → sym (ua z) ≡ ua (invEquiv z)) ideq e
+  where
+
+  ideq : {A : Type ℓ} → sym (ua {A = A}idEquiv) ≡ ua (invEquiv idEquiv)
+  ideq =
+    sym (ua idEquiv) ≡⟨ cong sym uaIdEquiv ⟩
+    refl ≡⟨ sym uaIdEquiv ⟩
+    ua idEquiv ≡⟨ cong ua refl ⟩
+    ua (invEquiv idEquiv) ∎
+ 
+substSymLoop : (n : ℤ) → subst code (sym loop) n ≡ predℤ n
+substSymLoop n =
+  subst code (sym loop) n ≡⟨ substComp code id (sym loop) n  ⟩
+  subst id (cong code (sym loop)) n ≡⟨ cong (λ z → subst id z n) (congSym code loop) ⟩
+  subst id (sym (cong code loop)) n ≡⟨ cong (λ z → subst id (sym z) n) (Circle-comp-loop-nd ℤ suc≡) ⟩
+  subst id (sym suc≡) n  ≡⟨ cong (λ z → subst id z n) (symEquiv suc≃) ⟩
+  subst id (ua (invEquiv suc≃)) n ≡⟨ cong (λ z → z n) (uaβ (invEquiv suc≃)) ⟩
+  predℤ n ∎
 
 substLoops : (m n : ℤ) → subst code (loops m) n ≡ m + n
 substLoops (pos zero) n = refl
@@ -234,7 +272,8 @@ substLoops (negsuc (suc m)) n =
 
 
 substLoopLoops : subst (λ x → code x → base ≡ x) loop loops ≡ loops
-substLoopLoops = subst (λ x → code x → base ≡ x) loop loops ≡⟨ funTypeTransp code (λ x → base ≡ x) loop loops ⟩
+substLoopLoops =
+  subst (λ x → code x → base ≡ x) loop loops ≡⟨ funTypeTransp code (λ x → base ≡ x) loop loops ⟩
   subst (λ z → base ≡ z) loop ∘ loops ∘ (subst code (sym loop)) ≡⟨ funExt (λ y → cong (λ t → subst (λ z → base ≡ z) loop (loops t)) (substSymLoop y)) ⟩
   subst (λ x → base ≡ x) loop ∘ loops ∘ predℤ ≡⟨ funExt (λ z → substInPathsR (loops (predℤ z)) loop) ⟩
   (λ z → loops (predℤ z) ∙ loop) ≡⟨ funExt p ⟩
@@ -281,3 +320,39 @@ loopEquiv x = isoToEquiv ((encode x) , (decode x , (decodeEncode x) , (encodeDec
 
 loopCircle : (base ≡ base) ≃ ℤ
 loopCircle = loopEquiv base
+
+--- Part 3
+
+
+open import Truncation
+
+isConnectedCircle' : (x : Circle) → ∥ base ≡ x ∥₁
+isConnectedCircle' = Circle-ind (λ z → ∥ base ≡ z ∥₁) ∣ loop ∣₁ (isPropPropTrunc (subst (λ z → ∥ base ≡ z ∥₁) loop ∣ loop ∣₁) ∣ loop ∣₁)
+
+isConnectedCircle : isConnected Circle
+isConnectedCircle = ∣ base ∣₁ ,
+                    Circle-ind (λ z → (y : Circle) → ∥ z ≡ y ∥₁)
+                               isConnectedCircle'
+                               (isPropΠ (λ z → ∥ base ≡ z ∥₁)
+                                        (λ x → isPropPropTrunc)
+                                        (subst (λ z → (y : Circle) → ∥ z ≡ y ∥₁)
+                                               loop isConnectedCircle')
+                                        isConnectedCircle')
+
+
+isGroupoidCircle : isGroupoid Circle
+isGroupoidCircle x y =
+  propTrunc-rec isPropIsSet
+                (λ p → propTrunc-rec isPropIsSet
+                                     (λ q → f p q)
+                                     (isConnectedCircle .snd base y))
+                (isConnectedCircle .snd base x)
+  where
+  
+  pathInCircle≡ls : {x y : Circle} → (x ≡ base) → (y ≡ base) → ((x ≡ y) ≡ (base ≡ base))
+  pathInCircle≡ls {x = x} {y = y} refl refl = refl
+
+  f : (p : base ≡ x) (q : base ≡ y) → isSet (x ≡ y)
+  f p q = subst isSet (sym (pathInCircle≡ls (sym p) (sym q) ∙ ua loopCircle)) isSetℤ
+  
+  
