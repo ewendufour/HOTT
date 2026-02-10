@@ -127,21 +127,12 @@ subInj P {x = x , Px} {y = y , Py} p = Σ≡ p (P y .snd (subst (λ z → fst (P
 isSet : Type ℓ → Type ℓ
 isSet A = (x y : A) → isProp (x ≡ y)
 
-
-
 isSet⊤ : isSet ⊤
 isSet⊤ tt tt refl refl = refl
-
-
 
 isSetBool : isSet Bool
 isSetBool true true refl refl = refl
 isSetBool false false refl refl = refl
-
-
-
-
-
      
 isSetℕ : isSet ℕ 
 isSetℕ n m p q =
