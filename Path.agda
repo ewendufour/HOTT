@@ -99,6 +99,9 @@ substComposite _ refl refl _ = refl
 substConst : { ℓ ℓ' : Level} {A : Type ℓ} {B : Type ℓ'} {x y : A} (p : x ≡ y) (x' : B) → subst (λ _ → B) p x' ≡ x'
 substConst refl _ = refl
 
+substComp : {A : Type ℓ} {B : Type ℓ'} (f : A → B) (P : B → Type ℓ'') {x y : A} (p : x ≡ y) (u : (P ∘ f) x) → subst (P ∘ f) p u ≡ subst P (cong f p) u
+substComp f P refl u = refl
+
 substInPathsR : {A : Type ℓ} {x y y' : A} (p : x ≡ y) (q : y ≡ y') → subst (λ y → x ≡ y) q p ≡ p ∙ q
 substInPathsR refl refl = refl
 

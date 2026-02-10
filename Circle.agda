@@ -40,7 +40,7 @@ Circle-comp-base-nd : {P : Type ℓ} (b : P) (l : b ≡ b) → Circle-rec b l ba
 Circle-comp-base-nd {P = P} b l = Circle-comp-base (λ _ → P) b (substConst loop b ∙ l)
 
 rev : Circle → Circle
-rev x = Circle-rec base (sym loop) x
+rev = Circle-rec base (sym loop)
 
 Circle-comp-loop-nd : {P : Type ℓ} (b : P) (l : b ≡ b) → cong (Circle-rec b l) loop ≡ l
 Circle-comp-loop-nd {P = P}b l =
@@ -58,6 +58,22 @@ Circle-comp-loop-nd {P = P}b l =
 
   lemma : {A : Type ℓ} {B : Type ℓ'} {f : A → B} {x y : A} (p : x ≡ y) → cong f p ≡ sym (substConst p (f x)) ∙ congP _  f p
   lemma refl = refl
+
+rev² : rev ∘ rev ≡ id
+rev² = funExt (Circle-ind (λ z → (rev ∘ rev) z ≡ id z) refl p)
+  where
+
+  p : PathOver (λ z → rev (rev z) ≡ z) loop refl refl
+  p =
+    subst (λ z → rev (rev z) ≡ z) loop refl ≡⟨ substInPaths (rev ∘ rev) id loop refl ⟩
+    sym (cong (λ x → rev (rev x)) loop) ∙ refl ∙ cong id loop ≡⟨ cong (λ z → sym (cong (λ x → rev (rev x)) loop) ∙ refl ∙ z) (congId loop) ⟩
+    sym (cong (Circle-rec base (sym loop) ∘ Circle-rec base (sym loop)) loop) ∙ loop ≡⟨ cong (λ z → sym z ∙ loop) (cong∘ (Circle-rec base (sym loop)) (Circle-rec base (sym loop)) loop) ⟩
+    sym (cong (Circle-rec base (sym loop)) (cong (Circle-rec base (sym loop)) loop)) ∙ loop ≡⟨ cong (λ z → sym (cong (Circle-rec base (sym loop)) z) ∙ loop) (Circle-comp-loop-nd base (sym loop)) ⟩
+    sym (cong (Circle-rec base (sym loop)) (sym loop)) ∙ loop ≡⟨ cong (λ z → sym z ∙ loop) (congSym (Circle-rec base (sym loop)) loop) ⟩
+    sym (sym (cong (Circle-rec base (sym loop)) loop)) ∙ loop ≡⟨ cong (λ z → sym (sym z) ∙ loop) (Circle-comp-loop-nd base (sym loop)) ⟩
+    sym (sym (sym loop)) ∙ loop ≡⟨ cong (λ z → z ∙ loop) (sym (symInvo (sym loop))) ⟩
+    sym loop ∙ loop ≡⟨ lCancel loop ⟩
+    refl ∎
   
 loop≢refl : ¬ (loop ≡ refl)
 loop≢refl lr = true≢false teqf
@@ -84,13 +100,40 @@ loop≢refl lr = true≢false teqf
     transport refl false ≡⟨ refl ⟩
     false ∎ 
 
-postulate
-  Circle-unique :
+Circle-unique :
     {A : Type ℓ}
     (f g : Circle → A)
     (p : f base ≡ g base)
     (q : PathOver (λ x → x ≡ x) p (cong f loop) (cong g loop))
     (x : Circle) → f x ≡ g x
+Circle-unique f g p q = Circle-ind (λ x → f x ≡ g x) p path
+  where
+
+  path : PathOver (λ z → f z ≡ g z) loop p p
+  path =
+    subst (λ z → f z ≡ g z) loop p ≡⟨ substInPaths f g loop p ⟩
+    sym (cong f loop) ∙ p ∙ cong g loop ≡⟨ cong (λ z → sym (cong f loop) ∙ z ∙ cong g loop) (symInvo p) ⟩
+    sym (cong f loop) ∙ sym (sym p) ∙ cong g loop ≡⟨ sym (assoc (sym (cong f loop)) (sym (sym p)) (cong g loop)) ⟩
+    (sym (cong f loop) ∙ sym (sym p)) ∙ cong g loop ≡⟨ cong (λ z → z ∙ cong g loop) (sym (st (sym p) (cong f loop))) ⟩
+    sym (sym p ∙ cong f loop) ∙ cong g loop ≡⟨ cong (λ z → sym (sym z ∙ cong f loop) ∙ cong g loop) (sym (congId p)) ⟩
+    sym (sym (cong id p) ∙ cong f loop) ∙ cong g loop ≡⟨ rotate∙≡ (sym (cong id p) ∙ cong f loop) (cong id p) (cong g loop) path' ⟩
+    cong id p ≡⟨ congId p ⟩
+    p ∎
+    where
+
+    st : {A : Type ℓ} {x y z : A} (p : x ≡ y) (q : y ≡ z) → sym (p ∙ q) ≡ sym q ∙ sym p
+    st p refl =
+      sym (p ∙ refl) ≡⟨ cong sym (sym (rUnit p)) ⟩
+      sym p ∎
+
+    path' : (sym (cong id p) ∙  cong f loop) ∙ cong id p ≡ cong g loop
+    path' =
+      (sym (cong id p) ∙ cong f loop) ∙ cong id p ≡⟨ assoc (sym (cong id p)) (cong f loop) (cong id p) ⟩
+      sym (cong id p) ∙ cong f loop ∙ cong id p ≡⟨ sym (substInPaths id id p (cong f loop)) ⟩
+      subst (λ x → x ≡ x) p (cong f loop) ≡⟨ q ⟩
+      cong g loop ∎
+
+
 
 Circle-ext : (x : Circle) → Circle-rec base loop x ≡ x
 Circle-ext = Circle-unique (Circle-rec base loop) id refl p
@@ -155,12 +198,86 @@ suc≡ = ua suc≃
 
 loops : ℤ → base ≡ base
 loops (pos zero) = refl
-loops (pos (suc n)) = loop ∙ loops (pos n)
+loops (pos (suc n)) = loops (pos n) ∙ loop 
 loops (negsuc zero) = sym loop
-loops (negsuc (suc n)) = sym loop ∙ loops (negsuc n)
+loops (negsuc (suc n)) = loops (negsuc n) ∙ sym loop
 
 code : Circle → Type
-code x = base ≡ x
+code = Circle-rec ℤ suc≡
 
 encode : (x : Circle) → base ≡ x → code x
-encode x p = subst code p (loops (pos zero))
+encode x p = subst code p (pos zero)
+
+substLoop : (n : ℤ) → subst code loop n ≡ sucℤ n
+substLoop n  =
+  subst code loop n ≡⟨ substComp code id loop n ⟩
+  subst id (cong code loop) n ≡⟨ cong (λ z → subst id z n) (Circle-comp-loop-nd ℤ suc≡) ⟩
+  subst id suc≡ n ≡⟨ cong (λ z → z n) (uaβ suc≃) ⟩ 
+  sucℤ n ∎
+
+postulate 
+  substSymLoop : (n : ℤ) → subst code (sym loop) n ≡ predℤ n
+
+substLoops : (m n : ℤ) → subst code (loops m) n ≡ m + n
+substLoops (pos zero) n = refl
+substLoops (pos (suc m)) n =
+  subst code (loops (pos m) ∙ loop) n ≡⟨ substComposite code (loops (pos m)) loop n ⟩
+  subst code loop (subst code (loops (pos m)) n) ≡⟨ substLoop (subst code (loops (pos m)) n) ⟩
+  sucℤ (subst code (loops (pos m)) n) ≡⟨ cong sucℤ (substLoops (pos m) n) ⟩
+  (pos (suc m) + n) ∎
+substLoops (negsuc zero) n = substSymLoop n
+substLoops (negsuc (suc m)) n =
+  subst code (loops (negsuc m) ∙ sym loop) n ≡⟨ substComposite code (loops (negsuc m)) (sym loop) n ⟩
+  subst code (sym loop) (subst code (loops (negsuc m)) n) ≡⟨ cong (subst code (sym loop)) (substLoops (negsuc m) n) ⟩
+  subst code (sym loop) (negsuc m + n) ≡⟨ substSymLoop (negsuc m + n) ⟩
+  (negsuc (suc m) + n) ∎
+
+
+substLoopLoops : subst (λ x → code x → base ≡ x) loop loops ≡ loops
+substLoopLoops = subst (λ x → code x → base ≡ x) loop loops ≡⟨ funTypeTransp code (λ x → base ≡ x) loop loops ⟩
+  subst (λ z → base ≡ z) loop ∘ loops ∘ (subst code (sym loop)) ≡⟨ funExt (λ y → cong (λ t → subst (λ z → base ≡ z) loop (loops t)) (substSymLoop y)) ⟩
+  subst (λ x → base ≡ x) loop ∘ loops ∘ predℤ ≡⟨ funExt (λ z → substInPathsR (loops (predℤ z)) loop) ⟩
+  (λ z → loops (predℤ z) ∙ loop) ≡⟨ funExt p ⟩
+  loops ∎
+
+  where
+
+  p : (z : ℤ) → loops (predℤ z) ∙ loop ≡ loops z
+  p (pos zero) = lCancel loop
+  p (pos (suc n)) = refl 
+  p (negsuc zero) =
+    (sym loop ∙ sym loop) ∙ loop ≡⟨ assoc (sym loop) (sym loop) loop ⟩
+    sym loop ∙ (sym loop ∙ loop) ≡⟨ cong (λ z → (sym loop) ∙ z) (lCancel loop) ⟩
+    sym loop ∙ refl ≡⟨ sym (rUnit (sym loop)) ⟩
+    sym loop ∎
+  p (negsuc (suc n)) =
+    loops (predℤ (negsuc (suc n))) ∙ loop ≡⟨ assoc ((loops (negsuc n)) ∙ (sym loop)) (sym loop) loop ⟩
+    (loops (negsuc n) ∙ sym loop) ∙ sym loop ∙ loop ≡⟨ cong (λ z → (loops (negsuc n) ∙ sym loop) ∙ z) (lCancel loop) ⟩
+    trans (loops (negsuc n)) (sym loop) ∙ refl ≡⟨ sym (rUnit (loops (negsuc (suc n)))) ⟩
+    loops (negsuc (suc n)) ∎
+
+decode : (x : Circle) → code x → base ≡ x
+decode = Circle-ind (λ x → code x → base ≡ x) loops substLoopLoops
+  
+decodeEncode : (x : Circle) (p : base ≡ x) → decode x (encode x p) ≡ p
+decodeEncode x refl = refl
+
+encodeDecode : (x : Circle) (n : code x) → encode x (decode x n) ≡ n
+encodeDecode = Circle-ind (λ x → (n : code x) → encode x (decode x n) ≡ n) bcase
+               (funExt (λ z → isSetℤ (encode base (decode base z))
+               z
+               (subst (λ x → (n : code x) → encode x (decode x n) ≡ n) loop bcase z)
+               (bcase z)))
+  where
+
+  bcase : (n : code base) → encode base (decode base n) ≡ n
+  bcase n =
+    subst code (loops n) (pos zero) ≡⟨ substLoops n (pos zero) ⟩
+    (n + (pos zero)) ≡⟨ addZero n ⟩
+    n ∎
+
+loopEquiv : (x : Circle) → (base ≡ x) ≃ code x
+loopEquiv x = isoToEquiv ((encode x) , (decode x , (decodeEncode x) , (encodeDecode x)))
+
+loopCircle : (base ≡ base) ≃ ℤ
+loopCircle = loopEquiv base
