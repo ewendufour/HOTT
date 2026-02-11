@@ -69,7 +69,7 @@ PathContractTest A = refl
 
 
 equiv→R : {A : Type ℓ} {B B' : Type ℓ'} → B ≃ B' → (A → B) ≃ (A → B')
-equiv→R {A = A} {B = B} {B' = B'} e = isoToEquiv (f , (g , ({!!} , {!!})))
+equiv→R {A = A} {B = B} {B' = B'} e = isoToEquiv (f , (g , (η , ϵ)))
   where
 
   f : (A → B) → A → B'
@@ -78,18 +78,28 @@ equiv→R {A = A} {B = B} {B' = B'} e = isoToEquiv (f , (g , ({!!} , {!!})))
   g : (A → B') → A → B
   g h = invEq e ∘ h
 
+  η : g ∘ f ∼ id
+  η h =
+    (invEq e ∘ equivFun e) ∘ h ≡⟨ cong (λ z → z ∘ h) (≃ind (λ e' → invEq e' ∘ equivFun e' ≡ id) refl e) ⟩
+    h ∎
+
+  ϵ : f ∘ g ∼ id
+  ϵ h = cong (λ z → z ∘ h) (≃ind (λ z → equivFun z ∘ invEq z ≡ id) refl e)
+  
+
 equiv→RTest : {A : Type ℓ} {B B' : Type ℓ'} (e : B ≃ B') (f : A → B) → equivFun (equiv→R e) f ≡ equivFun e ∘ f
 equiv→RTest e f = refl
 
 Homotopy≃Path : (A : Type ℓ) (B : Type ℓ') → Homotopy A B ≃ Path (A → B)
-Homotopy≃Path A B = {!!}
+Homotopy≃Path A B = compEquiv (Homotopy≃Homotopy' A B) (compEquiv (equiv→R (PathContract B)) (invEquiv (PathContract (A → B))))
+
 
 ≃Injective : {A : Type ℓ} {B : Type ℓ'} (e : A ≃ B) {x y : A} → equivFun e x ≡ equivFun e y → x ≡ y
 ≃Injective e p = {!!}
 
 
 funExtND : {A : Type ℓ} {B : Type ℓ'} {f g : A → B} → ((x : A) → f x ≡ g x) → f ≡ g
-funExtND fsg = {!!}
+funExtND {A = A} {B = B} {f = f} {g = g} fsg = {!!}
 
 
 --- Part 3
