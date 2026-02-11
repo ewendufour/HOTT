@@ -236,3 +236,25 @@ isEmbedding {A = A} f = (x y : A) → isEquiv (cong f {x = x} {y = y})
 
 hasPFibers : {A : Type ℓ} {B : Type ℓ'} (f : A → B) → Type (ℓ-max ℓ ℓ')
 hasPFibers {B = B} f = (y : B) → isProp (fiber f y)
+
+isEmbedding→hasPFibers : {A : Type ℓ} {B : Type ℓ'} (f : A → B) → isEmbedding f → hasPFibers f
+isEmbedding→hasPFibers f e b (a , p) (a' , q) = Σ≡ p1 p2
+  where
+
+  p1 : a ≡ a'
+  p1 = isEquiv→hasQInv (cong f)  (e a a') .fst  (p ∙ sym q)
+
+  p2 : PathOver (λ x → f x ≡ b) p1 p q
+  p2 =
+    subst (λ x → f x ≡ b) p1 p ≡⟨ substInPathsL' f p1 p ⟩
+    sym (cong f p1) ∙ p ≡⟨ cong (λ z → sym z ∙ p) (isEquiv→hasQInv (cong f) (e a a') .snd .snd (p ∙ sym q)) ⟩
+    sym (p ∙ sym q) ∙ p ≡⟨ cong (λ z → z ∙ p) (symDist p (sym q)) ⟩
+    (sym (sym q) ∙ sym p) ∙ p ≡⟨ assoc (sym (sym q)) (sym p) p ⟩
+    sym (sym q) ∙ sym p ∙ p ≡⟨ cong (λ z → sym (sym q) ∙ z) (lCancel p) ⟩
+    sym (sym q) ∙ refl ≡⟨ cong (λ z → z ∙ refl) (sym (symInvo q)) ⟩
+    q ∙ refl ≡⟨ sym (rUnit q) ⟩
+    q ∎
+
+--- hasPFibers→isEmbedding : {A : Type ℓ} {B : Type ℓ'} (f : A → B) → hasPFibers f → isEmbedding f
+--- hasPFibers→isEmbedding f pf x y = hasQInv→isEquiv (cong f) ({!!} , {!!})
+  
