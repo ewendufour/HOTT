@@ -234,18 +234,6 @@ substLoop n  =
   subst id (cong code loop) n ≡⟨ cong (λ z → subst id z n) (Circle-comp-loop-nd ℤ suc≡) ⟩
   subst id suc≡ n ≡⟨ cong (λ z → z n) (uaβ suc≃) ⟩ 
   sucℤ n ∎
-
-
-symEquiv : {A : Type ℓ} {B : Type ℓ} (e : A ≃ B) → sym (ua e) ≡ ua (invEquiv e)
-symEquiv e = ≃ind (λ z → sym (ua z) ≡ ua (invEquiv z)) ideq e
-  where
-
-  ideq : {A : Type ℓ} → sym (ua {A = A}idEquiv) ≡ ua (invEquiv idEquiv)
-  ideq =
-    sym (ua idEquiv) ≡⟨ cong sym uaIdEquiv ⟩
-    refl ≡⟨ sym uaIdEquiv ⟩
-    ua idEquiv ≡⟨ cong ua refl ⟩
-    ua (invEquiv idEquiv) ∎
  
 substSymLoop : (n : ℤ) → subst code (sym loop) n ≡ predℤ n
 substSymLoop n =

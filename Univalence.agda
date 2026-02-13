@@ -77,7 +77,16 @@ is¬≃≡⊥ = compEquiv (↔≃ (isProp→ isProp⊥) (isPropΣ isEquiv (isPro
   f : (p : A ≡ B) → P (pathToEquiv p )
   f refl = Pi
 
-      
+symEquiv : {A : Type ℓ} {B : Type ℓ} (e : A ≃ B) → sym (ua e) ≡ ua (invEquiv e)
+symEquiv e = ≃ind (λ z → sym (ua z) ≡ ua (invEquiv z)) ideq e
+  where
+
+  ideq : {A : Type ℓ} → sym (ua {A = A}idEquiv) ≡ ua (invEquiv idEquiv)
+  ideq =
+    sym (ua idEquiv) ≡⟨ cong sym uaIdEquiv ⟩
+    refl ≡⟨ sym uaIdEquiv ⟩
+    ua idEquiv ≡⟨ cong ua refl ⟩
+    ua (invEquiv idEquiv) ∎
 
 --- Part 4
 
