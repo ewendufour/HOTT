@@ -25,4 +25,12 @@ cong f p i = f (p i)
 --- Part 2
 
 transport : ∀ {ℓ} {A B : Set ℓ} → A ≡ B → A → B
-transport p a = ?
+transport p a = transp (λ i → p i) i0 a
+
+transportRefl : ∀ {ℓ} {A : Set ℓ} (x : A) → transport (λ _ → A) x ≡ x
+transportRefl {A = A} x i = transp (λ _ → A) i x
+
+J : {A : Type ℓ} {x : A} (P : ∀ y → x ≡ y → Type ℓ) (r : P x refl) {y : A} (p : x ≡ y) → P y p
+J P r p = transport (λ i → P (p i) (λ j → p (i ∧ j))) r
+
+
