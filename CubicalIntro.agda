@@ -69,18 +69,13 @@ module _ {A : Type ℓ} where
   _ ∎ = refl
 
 lUnit : {A : Type ℓ} {x y : A} (p : x ≡ y) → p ≡ refl ∙ p
-lUnit {A = A} {x = x} p i j = hfill f (inS x) j
-      where
-
-      f : (k : I) → Partial (i ∨ ~ i ∨ j ∨ ~ j ) A
-      f k (i = i0) = p (k ∧ j)
-      f k (i = i1) = compPath-filler refl p k j
-      f k (j = i0) = x
-      f k (j = i1) = p k
-
-
+lUnit {A = A} {x = x} {y = y} p j i = {!!}
+  
 rUnit : {A : Type ℓ} {x y : A} (p : x ≡ y) → p ≡ p ∙ refl
 rUnit {x = x} p j i = hfill (compFaces p refl i) (inS (p i)) j
 
-rCancel : {A : Type ℓ} {x y : A} (p : x ≡ y) → p ∙ sym p ≡ refl
-rCancel p i j = hfill {!!} {!!} {!!}
+--- rCancel : {A : Type ℓ} {x y : A} (p : x ≡ y) → p ∙ sym p ≡ refl
+--- rCancel {A = A} {x = x} p i j = {!!}
+
+cong-∙ : {A : Type ℓ} {B : Type ℓ'} (f : A → B) {x y z : A} (p : x ≡ y) (q : y ≡ z) → cong f (p ∙ q) ≡ (cong f p) ∙ (cong f q)
+cong-∙ f p q i = {!!}
