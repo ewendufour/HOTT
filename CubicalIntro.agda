@@ -69,13 +69,131 @@ module _ {A : Type ℓ} where
   _ ∎ = refl
 
 lUnit : {A : Type ℓ} {x y : A} (p : x ≡ y) → p ≡ refl ∙ p
-lUnit {A = A} {x = x} {y = y} p j i = {!!}
-  
+lUnit {A = A} {x = x} p k i = f i i1 k
+  where
+  u : (i k : I) → (j : I) → Partial (i ∨ ~ i ∨ k ∨ ~ k) A
+  u i k j (i = i0) = x
+  u i k j (i = i1) = (sym p) (k ∧ ~ j)
+  u i k j (k = i0) = p i
+  u i k j (k = i1) = compPath-filler refl p j i
+
+  f : (i j k : I) → A
+  f i j k = hfill (u i k) (inS (p (i ∧ ~ k))) j
+
+
 rUnit : {A : Type ℓ} {x y : A} (p : x ≡ y) → p ≡ p ∙ refl
 rUnit {x = x} p j i = hfill (compFaces p refl i) (inS (p i)) j
 
---- rCancel : {A : Type ℓ} {x y : A} (p : x ≡ y) → p ∙ sym p ≡ refl
---- rCancel {A = A} {x = x} p i j = {!!}
+rCancel : {A : Type ℓ} {x y : A} (p : x ≡ y) → p ∙ sym p ≡ refl
+rCancel {A = A} {x = x} p k i = {!f i i1 k  !}
+  where
+  
+  u : (i k : I) → (j : I) → Partial (i ∨ ~ i ∨ k ∨ ~ k) A
+  u i k j (i = i0) = x
+  u i k j (i = i1) = (sym p) j 
+  u i k j (k = i0) = p (i ∧ ~ j)
+  u i k j (k = i1) = compPath-filler p (sym p) j i
 
+  f : (i j k : I) → A
+  f i j k = hfill (u i k) (inS (p i)) j
+  
 cong-∙ : {A : Type ℓ} {B : Type ℓ'} (f : A → B) {x y z : A} (p : x ≡ y) (q : y ≡ z) → cong f (p ∙ q) ≡ (cong f p) ∙ (cong f q)
-cong-∙ f p q i = {!!}
+cong-∙ f p q i j = {!!}
+
+--- Part 4
+
+data Interval : Type where
+  Is : Interval
+  It : Interval
+  Ip : Is ≡ It
+
+
+Interval≃1 : Interval ≃ Unit
+Interval≃1 = isoToEquiv (iso f g η ϵ)
+  where
+
+  f : Interval → Unit
+  f _ = tt
+
+  g : Unit → Interval
+  g tt = Is
+
+  η : g ∘ f ∼ id
+  η Is j = Is 
+  η It j = Ip j
+  η (Ip i) j = Ip (j ∧ i)
+
+  ϵ : f ∘ g ∼ id
+  ϵ tt k = tt
+
+
+--- Part 5
+
+data Circle : Type where
+  base : Circle
+  loop : base ≡ base
+
+
+data Torus : Type where
+  point : Torus
+  loop1 : point ≡ point
+  loop2 : point ≡ point
+  square : PathP (λ i → loop1 i ≡ loop1 i) loop2 loop2
+
+C²≃T : Circle × Circle ≃ Torus
+C²≃T = isoToEquiv (iso f g η ϵ)
+  where
+
+  f : Circle × Circle → Torus
+  f (base , base) = point
+  f (base , loop i) = loop2 i
+  f (loop i , base) = loop1 i
+  f (loop i , loop j) = square i j
+
+  g : Torus → Circle × Circle
+  g point = base , base
+  g (loop1 i) = (loop i) , base
+  g (loop2 i) = base , loop i
+  g (square i j) = (loop i) , (loop j)
+
+  η : g ∘ f ∼ id
+  η (base , base) k = base , base
+  η (base , loop i) k = base , (loop i)
+  η (loop i , base) k = (loop i) , base
+  η (loop i , loop j) k = (loop i) , (loop j)
+
+  ϵ : f ∘ g ∼ id
+  ϵ point k = point
+  ϵ (loop1 i) k = loop1 i
+  ϵ (loop2 i) k = loop2 i
+  ϵ (square i j) k = square i j
+
+data Circle' : Type where
+  base1 : Circle'
+  base2 : Circle'
+  path1 : base1 ≡ base2
+  path2 : base1 ≡ base2
+
+C≃C' : Circle ≃ Circle'
+C≃C' = isoToEquiv (iso f g η ϵ)
+  where
+
+  f : Circle → Circle'
+  f base = base1
+  f (loop i) = {!!}
+
+  g : Circle' → Circle
+  g base1 = base
+  g base2 = base
+  g (path1 i) = loop i
+  g (path2 i) = loop i
+
+  η : g ∘ f ∼ id
+  η base k = loop k
+  η (loop i) k = {!!}
+
+  ϵ : f ∘ g ∼ id
+  ϵ base1 k = base1
+  ϵ base2 k = path1 k
+  ϵ (path1 i) k = path1 (i ∧ k)
+  ϵ (path2 i) k = {!!}
