@@ -85,17 +85,17 @@ rUnit : {A : Type ℓ} {x y : A} (p : x ≡ y) → p ≡ p ∙ refl
 rUnit {x = x} p j i = hfill (compFaces p refl i) (inS (p i)) j
 
 rCancel : {A : Type ℓ} {x y : A} (p : x ≡ y) → p ∙ sym p ≡ refl
-rCancel {A = A} {x = x} p k i = {!f i i1 k  !}
+rCancel {A = A} {x = x} p k i = hcomp (λ j → u i (~ k) j) (u0 i k)
   where
   
-  u : (i k : I) → (j : I) → Partial (i ∨ ~ i ∨ k ∨ ~ k) A
+  u : (i k : I) → (j : I) → Partial (i ∨ ~ i ∨ ~ k) A
   u i k j (i = i0) = x
   u i k j (i = i1) = (sym p) j 
   u i k j (k = i0) = p (i ∧ ~ j)
-  u i k j (k = i1) = compPath-filler p (sym p) j i
+  
 
-  f : (i j k : I) → A
-  f i j k = hfill (u i k) (inS (p i)) j
+  u0 : (i k : I) → A
+  u0 i k = p i
   
 cong-∙ : {A : Type ℓ} {B : Type ℓ'} (f : A → B) {x y z : A} (p : x ≡ y) (q : y ≡ z) → cong f (p ∙ q) ≡ (cong f p) ∙ (cong f q)
 cong-∙ f p q i j = {!!}
@@ -180,12 +180,12 @@ C≃C' = isoToEquiv (iso f g η ϵ)
 
   f : Circle → Circle'
   f base = base1
-  f (loop i) = {!!}
+  f (loop i) = (path1 ∙ sym path2) i
 
   g : Circle' → Circle
   g base1 = base
   g base2 = base
-  g (path1 i) = loop i
+  g (path1 i) = base
   g (path2 i) = loop i
 
   η : g ∘ f ∼ id
