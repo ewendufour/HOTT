@@ -98,7 +98,14 @@ rCancel {A = A} {x = x} p k i = hcomp (λ j → u i (~ k) j) (u0 i k)
   u0 i k = p i
   
 cong-∙ : {A : Type ℓ} {B : Type ℓ'} (f : A → B) {x y z : A} (p : x ≡ y) (q : y ≡ z) → cong f (p ∙ q) ≡ (cong f p) ∙ (cong f q)
-cong-∙ f p q i j = {!!}
+cong-∙ {B = B} f {x = x} p q k i = hcomp (λ j → u i (~ k) j) (cong f p i)
+  where
+
+  u : (i k : I) → (j : I) → Partial (k ∨ i ∨ ~ k ∨ ~ i) B
+  u i k j (k = i1) = cong f (compPath-filler p q j) i
+  u i k j (i = i1) = cong f q j
+  u i k j (k = i0) = compPath-filler (cong f p) (cong f q) j i
+  u i k j (i = i0) = f x 
 
 --- Part 4
 
